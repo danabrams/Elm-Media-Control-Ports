@@ -1,0 +1,19 @@
+{
+  "name": "elm-media-control",
+  "version": "0.0.1",
+  "description": "An Elm/Javascript package for dealing with Html5 Media API with lots of ports",
+  "main": "Ports.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/danabrams/Elm-Media-Control-Ports.git"
+  },
+  "author": "Dan Abrams",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/danabrams/Elm-Media-Control-Ports/issues"
+  },
+  "homepage": "https://github.com/danabrams/Elm-Media-Control-Ports#readme"
+}

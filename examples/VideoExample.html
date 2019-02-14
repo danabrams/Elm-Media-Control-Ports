@@ -1,0 +1,20 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD HTML 4.01//EN" "http://www.w3.org/TR/html4/strict.dtd">
+<html>
+
+<head>
+  <title>Elm Media Control Video Example</title>
+  <link rel="stylesheet" type="text/css" href="/demos.css">
+  <script src="video.js"></script>
+  <script src="../src/Ports.js"></script>
+</head>
+
+<body>
+  <main></main>
+  <script>
+    const app = Elm.Main.init({ node: document.querySelector('main') });
+    MediaControl.setup(app);
+    
+  </script>
+</body>
+
+</html>

@@ -1,0 +1,19 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <title>Page Title</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+</head>
+<body>
+    <video id="video" width="640" height="480"></video>
+    <script>
+        window.onload = function(){
+            navigator.mediaDevices.getUserMedia({video: {width: {min: 200}, height: {min: 100}}}).then(function(stream){
+                document.getElementById("video").srcObject = stream;
+            });
+        }
+    </script>
+</body>
+</html>
