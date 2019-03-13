@@ -18,7 +18,7 @@ type alias Model =
 type Msg
     = Play
     | Pause
-    | MediaCreated (Result Never Key)
+    | MediaCreated (Result Error Key)
     | StateUpdate State
 
 

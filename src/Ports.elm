@@ -1,4 +1,4 @@
-port module Ports exposing (OutboundMsg, PortState, analyserCreated, analyserTimeData, audioContextCreated, bufferCreated, mediaCreated, stateUpdate, toJs)
+port module Ports exposing (commandResult, OutboundMsg, PortState, analyserCreated, analyserTimeData, audioContextCreated, bufferCreated, mediaCreated, stateUpdate, toJs)
 
 import Array exposing (Array)
 import Json.Decode as Decode
@@ -19,6 +19,9 @@ port mediaCreated : ({ result : String, data : Decode.Value } -> msg) -> Sub msg
 
 
 port stateUpdate : (PortState -> msg) -> Sub msg
+
+
+port commandResult : ({ result : String, data : Decode.Value } -> msg) -> Sub msg
 
 
 port audioContextCreated : ({ result : String, data : Decode.Value } -> msg) -> Sub msg

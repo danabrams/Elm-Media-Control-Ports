@@ -1,5 +1,5 @@
 module Media exposing
-    ( create, state, State, Error, TimeRange
+    ( create, state, State, Error(..), TimeRange
     , play, pause, seek, volume, muted, loop
     , video
     , Config, Key, Playback(..), created, encodeConfig, encodeKey, playbackRate
@@ -51,14 +51,26 @@ create config =
     toJs { ref = "This", command = "CREATE", data = encodeConfig config }
 
 
-toKeyResult : { result : String, data : Decode.Value } -> Result Never Key
+toKeyResult : { result : String, data : Decode.Value } -> Result Error Key
 toKeyResult rs =
     case rs.result of
-        _ ->
+        "OK" ->
             Ok <| Key rs.data
 
+        "Err" ->
+            Err <|
+                case Decode.decodeValue Decode.string rs.data of
+                    Ok str ->
+                        Other str
 
-created : (Result Never Key -> msg) -> Sub msg
+                    _ ->
+                        CouldntDecodeIncomingData
+
+        _ ->
+            Err InvalidIncomingData
+
+
+created : (Result Error Key -> msg) -> Sub msg
 created keyMsg =
     Sub.map keyMsg
         (mediaCreated toKeyResult)
@@ -81,6 +93,32 @@ getState (Key mediaId) =
 state : (State -> msg) -> Sub msg
 state msg =
     Sub.map msg (Ports.stateUpdate decodeState)
+
+
+{-| A subscription to results or failures of things that should be Tasks
+-}
+commandResult : (Result Error () -> msg) -> Sub msg
+commandResult msg =
+    Sub.map msg (Ports.commandResult toCommandResult)
+
+
+toCommandResult : { result : String, data : Decode.Value } -> Result Error ()
+toCommandResult rs =
+    case rs.result of
+        "OK" ->
+            Ok ()
+
+        "Err" ->
+            Err <|
+                case Decode.decodeValue Decode.string rs.data of
+                    Ok str ->
+                        Other str
+
+                    _ ->
+                        CouldntDecodeIncomingData
+
+        _ ->
+            Err <| InvalidIncomingData
 
 
 {-| Create a visible Html Dom node using your video Id.
@@ -161,6 +199,9 @@ type Error
     | InvalidSource
     | SettingAgainstBrowserPolicy
     | NetworkConnectivity
+    | InvalidIncomingData
+    | CouldntDecodeIncomingData
+    | Other String
 
 
 {-| An example of what a State record might look like

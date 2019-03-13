@@ -18,7 +18,7 @@ type alias Model =
 type Msg
     = Play
     | Pause
-    | MediaCreated (Result Never Key)
+    | MediaCreated (Result Error Key)
     | StateUpdate State
 
 
@@ -76,7 +76,7 @@ init : () -> ( Model, Cmd msg )
 init _ =
     ( { playback = Nothing, media = Nothing, playing = False, alreadyPlayed = False, fastPlay = False, played = [] }
     , Media.create
-        { source = Source.source <| Source.url "/applause3.wav"
+        { source = Source.source <| Source.url "applause3.wav"
         , loop = True
         , muted = False
         , volume = Just 1.0

@@ -1,0 +1,91 @@
+.main {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  flex-wrap: wrap;
+}
+
+.video {
+  width: 720;
+  height: 405;
+}
+
+.applause {
+  flex-direction: row;
+  text-align: center;
+  font-family: "HelveticaNeue";
+  flex: 1 0 100%;
+  font-size: 200px;
+  font-weight: 900;
+  color: red;
+}
+
+span {
+}
+
+@keyframes blink {
+  25% {opacity: 0}
+  75% {opacity: 1}
+}
+
+@-webkit-keyframes blink {
+  from {opacity: 0}
+  to {opacity: 1}
+}
+
+.off {
+  opacity: 0;
+}
+
+.pause { 
+  opacity: 1;
+}
+
+@-webkit-keyframes blinker {
+  from {opacity: 1.0;}
+  to {opacity: 0.0;}
+}
+.blink{
+	text-decoration: blink;
+	-webkit-animation-name: blinker;
+	-webkit-animation-duration: 0.6s;
+	-webkit-animation-iteration-count:infinite;
+	-webkit-animation-timing-function:ease-in-out;
+	-webkit-animation-direction: alternate;
+}
+
+.row {  
+  display: flex;
+  flex-direction: row;
+  flex: 1 1 100%;
+  align-items: center;
+  justify-content: center;
+}
+
+.controls {
+  width: 720;
+  align-self: flex-start;
+  padding: 5px;
+}
+
+button {
+  font-size: xx-large;
+  font-family: "HelveticaNeue", "Helvetica Neue", "Helvetica Neue", Helvetica, Arial, "Lucida Grande", sans-serif; 
+  font-weight: 300;
+  color: white;
+  border: 0;
+  box-shadow: 2px 2px 4px #000000;
+  border-radius: 5px;
+  background-color: red;
+  margin: 10px;
+  padding: 5px;
+  padding-left: 30px;
+  padding-right: 30px;
+  
+}
+
+button:hover {
+  box-shadow: 3px 3px 5px #000000;
+}
