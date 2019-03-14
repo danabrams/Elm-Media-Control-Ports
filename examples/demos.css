@@ -64,6 +64,12 @@ span {
   justify-content: center;
 }
 
+.error {
+  border-color : lightcoral ;
+  background-color : pink;
+  color: darkred;
+}
+
 .controls {
   width: 720;
   align-self: flex-start;

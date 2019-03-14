@@ -2,7 +2,7 @@ module Media exposing
     ( create, state, State, Error(..), TimeRange
     , play, pause, seek, volume, muted, loop
     , video
-    , Config, Key, Playback(..), created, encodeConfig, encodeKey, playbackRate
+    , Config, Key, Playback(..), created, decodeError, encodeConfig, encodeKey, playbackRate
     )
 
 {-|
@@ -24,7 +24,7 @@ module Media exposing
 
 -}
 
-import Html exposing (Attribute, Html, node)
+import Html exposing (Html, node)
 import Html.Attributes exposing (property)
 import Json.Decode as Decode
 import Json.Encode as Encode
@@ -57,11 +57,11 @@ toKeyResult rs =
         "OK" ->
             Ok <| Key rs.data
 
-        "Err" ->
+        "ERR" ->
             Err <|
                 case Decode.decodeValue Decode.string rs.data of
                     Ok str ->
-                        Other str
+                        decodeError str
 
                     _ ->
                         CouldntDecodeIncomingData
@@ -89,36 +89,13 @@ getState (Key mediaId) =
 
 
 {-| A subscription to the current State of your media. NOTE: In final implementation, we'll probably need to make a "WithOptions" version for some advanced use-cases.
+
+This returns an Error or a State. It can be in Error, for instance if a command to change state is wrong, or if the url isn't found.
+
 -}
-state : (State -> msg) -> Sub msg
+state : (Result Error State -> msg) -> Sub msg
 state msg =
     Sub.map msg (Ports.stateUpdate decodeState)
-
-
-{-| A subscription to results or failures of things that should be Tasks
--}
-commandResult : (Result Error () -> msg) -> Sub msg
-commandResult msg =
-    Sub.map msg (Ports.commandResult toCommandResult)
-
-
-toCommandResult : { result : String, data : Decode.Value } -> Result Error ()
-toCommandResult rs =
-    case rs.result of
-        "OK" ->
-            Ok ()
-
-        "Err" ->
-            Err <|
-                case Decode.decodeValue Decode.string rs.data of
-                    Ok str ->
-                        Other str
-
-                    _ ->
-                        CouldntDecodeIncomingData
-
-        _ ->
-            Err <| InvalidIncomingData
 
 
 {-| Create a visible Html Dom node using your video Id.
@@ -201,7 +178,20 @@ type Error
     | NetworkConnectivity
     | InvalidIncomingData
     | CouldntDecodeIncomingData
+    | CouldntCreateMedia
+    | CaptureOverConstrained
     | Other String
+
+
+{-| -}
+decodeError : String -> Error
+decodeError err =
+    case err of
+        "Invalid constraint" ->
+            CaptureOverConstrained
+
+        _ ->
+            Other err
 
 
 {-| An example of what a State record might look like
@@ -257,76 +247,85 @@ type NetworkState
     | NoSource
 
 
-decodeState : PortState -> State
+decodeState : PortState -> Result Error State
 decodeState prt =
-    let
-        pback =
-            case prt.playback of
-                "PLAYING" ->
-                    Playing
+    case prt.result of
+        "OK" ->
+            let
+                pback =
+                    case prt.playback of
+                        "PLAYING" ->
+                            Playing
 
-                "PAUSED" ->
-                    Paused
+                        "PAUSED" ->
+                            Paused
 
-                "ENDED" ->
-                    Ended
+                        "ENDED" ->
+                            Ended
 
-                "LOADING" ->
-                    Loading
+                        "LOADING" ->
+                            Loading
 
-                "BUFFERING" ->
-                    Buffering
+                        "BUFFERING" ->
+                            Buffering
 
-                _ ->
-                    PlaybackError prt.playback
+                        _ ->
+                            PlaybackError prt.playback
 
-        network =
-            case prt.networkState of
-                0 ->
-                    Empty
+                network =
+                    case prt.networkState of
+                        0 ->
+                            Empty
 
-                1 ->
-                    Idle
+                        1 ->
+                            Idle
 
-                2 ->
-                    DataLoading
+                        2 ->
+                            DataLoading
 
-                _ ->
-                    NoSource
+                        _ ->
+                            NoSource
 
-        ready =
-            case prt.readyState of
-                0 ->
-                    NoData
+                ready =
+                    case prt.readyState of
+                        0 ->
+                            NoData
 
-                1 ->
-                    Metadata
+                        1 ->
+                            Metadata
 
-                2 ->
-                    CurrentData
+                        2 ->
+                            CurrentData
 
-                3 ->
-                    FutureData
+                        3 ->
+                            FutureData
 
-                _ ->
-                    EnoughData
-    in
-    { currentTime = prt.currentTime
-    , duration = prt.duration
-    , playback = pback
-    , source = prt.source
-    , loop = prt.loop
-    , muted = prt.muted
-    , volume = prt.volume
-    , buffered = prt.buffered
-    , seekable = prt.seekable
-    , played = prt.played
-    , playbackRate = prt.playbackRate
-    , networkState = network
-    , readyState = ready
-    , width = prt.width
-    , height = prt.height
-    }
+                        _ ->
+                            EnoughData
+            in
+            Ok
+                { currentTime = prt.currentTime
+                , duration = prt.duration
+                , playback = pback
+                , source = prt.source
+                , loop = prt.loop
+                , muted = prt.muted
+                , volume = prt.volume
+                , buffered = prt.buffered
+                , seekable = prt.seekable
+                , played = prt.played
+                , playbackRate = prt.playbackRate
+                , networkState = network
+                , readyState = ready
+                , width = prt.width
+                , height = prt.height
+                }
+
+        "ERR" ->
+            Err <| decodeError prt.error
+
+        _ ->
+            Err InvalidIncomingData
 
 
 

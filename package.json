@@ -4,7 +4,8 @@
   "description": "An Elm/Javascript package for dealing with Html5 Media API with lots of ports",
   "main": "Ports.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest",
+    "build-examples": "elm make "
   },
   "repository": {
     "type": "git",
@@ -15,5 +16,11 @@
   "bugs": {
     "url": "https://github.com/danabrams/Elm-Media-Control-Ports/issues"
   },
-  "homepage": "https://github.com/danabrams/Elm-Media-Control-Ports#readme"
+  "homepage": "https://github.com/danabrams/Elm-Media-Control-Ports#readme",
+  "dependencies": {
+    "chai": "^4.2.0",
+    "jest": "^24.5.0",
+    "mocha": "^6.0.2",
+    "showroom": "^0.9.3"
+  }
 }

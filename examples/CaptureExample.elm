@@ -12,14 +12,19 @@ import Ports
 
 
 type alias Model =
-    { playback : Maybe Media.Playback, media : Maybe Key, width : Int, height : Int }
+    { playback : Maybe Media.Playback
+    , media : Maybe Key
+    , width : Int
+    , height : Int
+    , mediaError : Maybe Error
+    }
 
 
 type Msg
     = Play
     | Pause
     | MediaCreated (Result Error Key)
-    | StateUpdate State
+    | StateUpdate (Result Error State)
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
@@ -30,8 +35,8 @@ update msg model =
                 Ok k ->
                     ( { model | media = Just k }, Cmd.none )
 
-                Err _ ->
-                    ( model, Cmd.none )
+                Err e ->
+                    ( { model | mediaError = Just e }, Cmd.none )
 
         Play ->
             case model.media of
@@ -49,8 +54,13 @@ update msg model =
                 Just m ->
                     ( model, pause m )
 
-        StateUpdate s ->
-            ( { model | playback = Just s.playback, width = s.width, height = s.height }, Cmd.none )
+        StateUpdate newState ->
+            case newState of
+                Ok s ->
+                    ( { model | playback = Just s.playback, width = s.width, height = s.height }, Cmd.none )
+
+                Err e ->
+                    ( { model | mediaError = Just e }, Cmd.none )
 
 
 main =
@@ -72,11 +82,15 @@ subscriptions model =
             state StateUpdate
 
 
+request =
+    { width = 1280, height = 1280 }
+
+
 init : () -> ( Model, Cmd msg )
 init _ =
-    ( { playback = Nothing, media = Nothing, width = 0, height = 0 }
+    ( { playback = Nothing, media = Nothing, width = 0, height = 0, mediaError = Nothing }
     , Media.create
-        { source = Source.capture <| Capture.Settings { audio = Nothing, video = Just [ Capture.width (Capture.range |> Capture.ideal 1280), Capture.height (Capture.range |> Capture.ideal 720) ] }
+        { source = Source.capture <| Capture.Settings { audio = Nothing, video = Just [ Capture.width (Capture.range |> Capture.ideal request.width), Capture.height (Capture.range |> Capture.ideal request.height) ] }
         , loop = False
         , muted = False
         , volume = Just 1.0
@@ -95,10 +109,26 @@ view model =
 
                 Just m ->
                     [ Media.video m [ class "video" ] ]
+
+        actualRes =
+            if model.width /= 0 && model.height /= 0 then
+                "Camera: " ++ String.fromInt model.width ++ "x" ++ String.fromInt model.height
+
+            else
+                "Requested: " ++ String.fromInt request.width ++ "x" ++ String.fromInt request.height
+
+        errorRow =
+            case model.mediaError of
+                Just CaptureOverConstrained ->
+                    div [ class "row error" ] [ text "Error: Cannot Capture With Those Settings" ]
+
+                _ ->
+                    div [] []
     in
     div [ class "main" ]
         [ div [ class "row" ] vid
         , div [ class "row" ]
-            [ text <| "requested: 1280x720, camera: " ++ String.fromInt model.width ++ "x" ++ String.fromInt model.height
+            [ text actualRes
             ]
+        , errorRow
         ]

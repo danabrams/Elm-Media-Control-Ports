@@ -19,7 +19,7 @@ type Msg
     = Play
     | Pause
     | MediaCreated (Result Error Key)
-    | StateUpdate State
+    | StateUpdate (Result Error State)
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
@@ -49,8 +49,12 @@ update msg model =
                 Just m ->
                     ( model, pause m )
 
-        StateUpdate s ->
-            ( { model | playback = Just s.playback }, Cmd.none )
+        StateUpdate newState ->
+            case newState of
+                Ok s -> 
+                    ( { model | playback = Just s.playback }, Cmd.none )
+                Err _ ->
+                    (model, Cmd.none)
 
 
 main =
@@ -94,7 +98,7 @@ view model =
                     []
 
                 Just m ->
-                    [ Media.video m [ width 720, height 480, class "video" ] ]
+                    [ Media.video m [ width 360, height 240, class "video" ] ]
     in
     div [ class "main" ]
         [ div [ class "row" ] vid

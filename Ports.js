@@ -1,4 +1,3 @@
-
 const MediaControl = {
     setup:
         function (app) {
@@ -24,9 +23,17 @@ function decodeTimeRanges(ranges) {
     return decoded;
 }
 
+function errorToPortState(err) {
+    return {
+        result: "ERROR",
+        data: err
+    };
+}
+
 //for decoding our MediaElement's current state
 function mediaToPortState(md) {
     return {
+        result: "OK",
         currentTime: md.currentTime,
         duration: md.duration,
         playback: decodePlaybackState(md),
@@ -41,7 +48,8 @@ function mediaToPortState(md) {
         height: md.videoHeight,
         seekable: decodeTimeRanges(md.seekable),
         buffered: decodeTimeRanges(md.buffered),
-        played: decodeTimeRanges(md.played)
+        played: decodeTimeRanges(md.played),
+        error: ""
     };
 }
 
@@ -56,6 +64,11 @@ function err(result) {
     return { result: "ERR", data: result };
 }
 
+function commandResult(result) {
+    if (app.ports.commandResult) {
+        app.ports.commandResult.send(result);
+    }
+}
 
 
 function respondToElm(msg) {
@@ -65,9 +78,18 @@ function respondToElm(msg) {
             if (app.ports.mediaCreated.send) {
                 let media = createMedia(msg.data);
                 if (media != null) {
-                    app.ports.mediaCreated.send(ok(media));
+                    media.addEventListener('error', function () {
+                        console.log('error ', media.error);
+                        app.ports.mediaCreated.send(err(media.error));
+                    });
+                    media.addEventListener('loadmetadata', function () {
+                        console.log('loadedmetadata ', media.src);
+                        app.ports.mediaCreated.send(ok(media));
+                    });
+                    media.load();
+
                 } else {
-                    app.ports.mediaCreated.send(err("Couldn't Create Media."));
+                    app.ports.mediaCreated.send(err("COULDNT_CREATE_MEDIA"));
                 }
             }
             break;
@@ -76,13 +98,28 @@ function respondToElm(msg) {
             if (msg.data.mediaObj) {
                 switch (msg.data.setting) {
                     case "PLAY":
-                        msg.data.mediaObj.play();
+                        try {
+                            msg.data.mediaObj.play();
+                            commandResult(ok());
+                        } catch (error) {
+                            commandResult(err(error.message));
+                        }
                         break;
                     case "PAUSE":
-                        msg.data.mediaObj.pause();
+                        try {
+                            msg.data.mediaObj.pause();
+                            commandResult(ok());
+                        } catch (error) {
+                            commandResult(err(error.message));
+                        }
                         break;
                     default:
-                        msg.data.mediaObj[msg.data.setting] = msg.data.value;
+                        try {
+                            msg.data.mediaObj[msg.data.setting] = msg.data.value;
+                            commandResult(ok());
+                        } catch (error) {
+                            commandResult(err(Error.message));
+                        }
                         break;
                 }
                 //Make sure the right port is intalled, and if it is, send the current state through.
@@ -144,16 +181,32 @@ function typeToString(src) {
 function createMedia(config) {
     let media = document.createElement("video");
 
+    media.addEventListener('loadedmetadata', function () {
+        app.ports.mediaCreated.send(ok(media));
+    });
+
     //Is Elm providing us a single URL for our media?
     if (config.source.url) {
         let urlSource = createUrlSource(config.source);
+        urlSource.onerror = function (error) {
+            console.log("load error ", urlSource.error);
+            app.ports.mediaCreated.send(err("NO_VALID_SOURCE_LOADED"));
+        };
         media.appendChild(urlSource);
         //Or is elm providing a list of fallback URLs
     } else if (config.source.urls) {
         console.log(config.source.urls);
         let urlSource;
+        let loadErrors = 0;
         for (let i = 0; i < config.source.urls.length; i++) {
             urlSource = createUrlSource(config.source.urls[i]);
+            urlSource.onerror = function (error) {
+                console.log("load error");
+                loadErrors++;
+                if (loadErrors == config.source.urls.length) {
+                    app.ports.mediaCreated.send(err("NO_VALID_SOURCE_LOADED"))
+                }
+            };
             media.appendChild(urlSource);
         }
         //Or is elm asking us to create a Capture Stream.
@@ -175,6 +228,7 @@ function createMedia(config) {
                 }
                 media.play();
             }).catch(function (error) {
+                app.ports.mediaCreated.send(err(error.message));
                 console.log(error);
 
             });
@@ -236,7 +290,7 @@ class VideoElement extends HTMLElement {
     }
 
     attributeChangedCallback(name, old, newValue) {
-        if (this._media && this._media.setAttribute && !disallowedAttributes.includes(name)) {
+        if (this._media && this._media.setAttribute) {
             this._media.setAttribute(name, newValue);
 
         }

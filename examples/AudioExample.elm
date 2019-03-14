@@ -12,14 +12,14 @@ import Ports
 
 
 type alias Model =
-    { playback : Maybe Media.Playback, media : Maybe Key, playing : Bool, alreadyPlayed : Bool, fastPlay : Bool, played : List Media.TimeRange }
+    { playback : Maybe Media.Playback, media : Maybe Key, alreadyPlayed : Bool, fastPlay : Bool, played : List Media.TimeRange }
 
 
 type Msg
     = Play
     | Pause
     | MediaCreated (Result Error Key)
-    | StateUpdate State
+    | StateUpdate (Result Error State)
 
 
 update : Msg -> Model -> ( Model, Cmd msg )
@@ -49,8 +49,13 @@ update msg model =
                 Just m ->
                     ( model, pause m )
 
-        StateUpdate s ->
-            ( { model | playback = Just s.playback, played = s.played }, Cmd.none )
+        StateUpdate res ->
+            case res of
+                Ok s ->
+                    ( { model | playback = Just s.playback, played = s.played }, Cmd.none )
+
+                Err _ ->
+                    ( model, Cmd.none )
 
 
 main =
@@ -74,7 +79,7 @@ subscriptions model =
 
 init : () -> ( Model, Cmd msg )
 init _ =
-    ( { playback = Nothing, media = Nothing, playing = False, alreadyPlayed = False, fastPlay = False, played = [] }
+    ( { playback = Nothing, media = Nothing, alreadyPlayed = False, fastPlay = False, played = [] }
     , Media.create
         { source = Source.source <| Source.url "applause3.wav"
         , loop = True
