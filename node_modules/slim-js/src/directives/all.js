@@ -1,4 +1,0 @@
-import './repeat.js'
-import './bind-attr.js'
-import './if.js'
-import './switch-case.js'
